@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sign and publish on the mini with the YubiKey. CI only builds unsigned RPMs; the key
 # never leaves the card. Each signature needs a PIN and a touch.
-# Needs (brew install rpm createrepo_c):  rpmsign, createrepo_c on the host.
+# Needs (brew install rpm): rpmsign on the host; repo metadata is built in the el7 container.
 #   ./release/publish-on-mini.sh <CI run id>
 set -euo pipefail
 
@@ -24,7 +24,9 @@ rpmkeys --dbpath "$stage/db" --import "$root/release/RPM-GPG-KEY-muertos"
 rpmkeys --dbpath "$stage/db" --checksig "$stage"/repo/x86_64/*.rpm | grep -v ' signatures OK' \
   && { echo "bad or unsigned RPM above" >&2; exit 1; } || true
 
-createrepo_c "$stage/repo"
+docker build --platform linux/amd64 -t muertos-build:el7 "$root/build"
+docker run --rm --platform linux/amd64 -v "$stage/repo:/repo" muertos-build:el7 \
+  createrepo --general-compress-type=gz /repo
 gpg --detach-sign --armor -u "$fpr" -o "$stage/repo/repodata/repomd.xml.asc" "$stage/repo/repodata/repomd.xml"
 
 git -C "$root" fetch -q origin gh-pages 2>/dev/null || true

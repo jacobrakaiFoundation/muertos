@@ -10,7 +10,7 @@ export GNUPGHOME="$HOME/.muertos-gnupg"
 mkdir -m 700 "$GNUPGHOME"
 
 # Tools the release flow needs: pinentry-mac shows the PIN prompt without a terminal.
-for formula in pinentry-mac rpm createrepo_c ykman; do
+for formula in pinentry-mac rpm ykman; do
   brew list --formula "$formula" > /dev/null 2>&1 || brew install "$formula"
 done
 echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" > "$GNUPGHOME/gpg-agent.conf"
