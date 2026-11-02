@@ -1,0 +1,30 @@
+name: backports
+
+on:
+  push:
+    paths: [packages/**, backport.sh, build/Dockerfile, build/vault.repo, .github/workflows/backports.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: backports-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [sudo]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.package }}
+        run: ./backport.sh build ${{ matrix.package }}
+      - name: Test ${{ matrix.package }} on stock 7.9
+        run: ./backport.sh test ${{ matrix.package }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}-rpms
+          path: out/${{ matrix.package }}/*.rpm
+          if-no-files-found: error
