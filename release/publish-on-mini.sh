@@ -1,35 +1,32 @@
 #!/usr/bin/env bash
-# Sign and publish on the mini. CI only ever builds unsigned RPMs; the private key lives
-# in ~/.muertos-gnupg here and never goes to GitHub.
-#   ./release/publish-on-mini.sh <CI run id of the kernel-lt/packages workflow>
+# Sign and publish on the mini with the YubiKey. CI only builds unsigned RPMs; the key
+# never leaves the card. Each signature needs a PIN and a touch.
+# Needs (brew install rpm createrepo_c):  rpmsign, createrepo_c on the host.
+#   ./release/publish-on-mini.sh <CI run id>
 set -euo pipefail
 
 run_id="$1"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 fpr="$(cat "$root/release/signing-key.fpr")"
+export GNUPGHOME="$HOME/.muertos-gnupg"
 stage="$(mktemp -d)"
-gnupg="$(mktemp -d)"
-chmod 700 "$gnupg"
-trap 'rm -rf "$stage" "$gnupg"' EXIT
+trap 'rm -rf "$stage"' EXIT
 
-read -r -s -p "muertos key passphrase: " passphrase
-echo
-
-# Fetch the unsigned RPMs CI built.
 gh run download "$run_id" --repo jacobrakaiFoundation/muertos --dir "$stage/in"
 mkdir -p "$stage/repo/x86_64"
 find "$stage/in" -name '*.rpm' -exec cp {} "$stage/repo/x86_64/" \;
 
-# Temporary keyring for the container; removed on exit.
-GNUPGHOME="$HOME/.muertos-gnupg" gpg --batch --pinentry-mode loopback \
-  --passphrase "$passphrase" --export-secret-keys "$fpr" > "$gnupg/secret.gpg"
+for rpm in "$stage"/repo/x86_64/*.rpm; do
+  rpmsign --define "_gpg_name $fpr" --addsign "$rpm"
+done
+# Verify with the committed public key in a throwaway rpm db.
+rpmkeys --dbpath "$stage/db" --import "$root/release/RPM-GPG-KEY-muertos"
+rpmkeys --dbpath "$stage/db" --checksig "$stage"/repo/x86_64/*.rpm | grep -v ' signatures OK' \
+  && { echo "bad or unsigned RPM above" >&2; exit 1; } || true
 
-docker build --platform linux/amd64 -t muertos-build:el7 "$root/build"
-docker run --rm --platform linux/amd64 -e FPR="$fpr" -e PASS="$passphrase" \
-  -v "$stage/repo:/repo" -v "$gnupg:/gnupg" -v "$root/release:/release:ro" \
-  muertos-build:el7 sign-and-index-in-container
+createrepo_c "$stage/repo"
+gpg --detach-sign --armor -u "$fpr" -o "$stage/repo/repodata/repomd.xml.asc" "$stage/repo/repodata/repomd.xml"
 
-# Publish to the gh-pages branch (GitHub Pages serves it as the yum repo).
 git -C "$root" fetch -q origin gh-pages 2>/dev/null || true
 pages="$(mktemp -d)"
 git -C "$root" worktree add -q "$pages" origin/gh-pages 2>/dev/null \

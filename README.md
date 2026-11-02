@@ -47,9 +47,10 @@ This builds the 6.12 LTS `kernel-lt` RPM (`kernel/kernel-lt.spec`) into `out/ker
 - **Hosting (decided).** v0.1 serves the yum repo as static files from GitHub Pages
   (no credentials, free for public repos). Move to Cloudflare R2 if the site nears
   Pages' ~1 GB limit, which the kernel RPMs will do first.
-- **Signing key (open, owner only).** A GPG key that the owner generates and keeps
-  offline; only the public half is committed. Until then CI signs with a throwaway test
-  key so the upgrade test can run, and packages from that key are never published.
+- **Signing key (decided, owner action).** An OpenPGP key generated on a YubiKey,
+  kept on the mini (`release/keygen.sh`), so signing needs the card, its PIN and a touch.
+  CI builds unsigned RPMs; `release/publish-on-mini.sh` signs and stages the repo. Only the
+  public key is committed. WebAuthn passkeys cannot produce the OpenPGP signatures rpm checks.
 - **Patch sources.** Candidates are upstream project commits and Debian/Ubuntu LTS
   backports for the same versions. Whether any commercial el7 extended-support
   vendor publishes its patched sources is still unchecked.
