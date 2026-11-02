@@ -70,8 +70,11 @@ guest systemctl --failed --no-legend | awk '{print $1}' > stock-failed-units
 echo "failed units on stock kernel: $(tr '\n' ' ' < stock-failed-units)"
 
 scp "${ssh_opts[@]}" -P "$ssh_port" "$rpm_path" "$root/build/vault.repo" "$root/tests/guest-checks.sh" \
-  stock-failed-units centos@127.0.0.1:
+  "$root/tests/docker-check.sh" stock-failed-units centos@127.0.0.1:
 guest sudo sh -c 'rm -f /etc/yum.repos.d/*.repo && cp vault.repo /etc/yum.repos.d/'
+# Baseline only: tells a kernel-lt docker failure apart from one the stock kernel shares.
+echo "docker check on stock kernel:"
+guest sudo bash docker-check.sh || echo "docker check FAILED on stock kernel (baseline, not fatal)"
 guest sudo yum -y localinstall "$(basename "$rpm_path")"
 expected="$(guest rpm -qp --qf '%{VERSION}-%{RELEASE}.%{ARCH}' "$(basename "$rpm_path")")"
 echo "default boot entry: $(guest sudo grubby --default-kernel)"
