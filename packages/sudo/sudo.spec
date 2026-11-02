@@ -1,7 +1,10 @@
+# muertos: upstream built this as 10.el7_9.3; our build root's dist is .el7, which
+# would sort before the installed package, so pin the upstream dist.
+%global dist .el7_9
 Summary: Allows restricted root access for specified users
 Name: sudo
 Version: 1.8.23
-Release: 10%{?dist}.3
+Release: 10%{?dist}.3.muertos1
 License: ISC
 Group: Applications/System
 URL: http://www.courtesan.com/sudo/
@@ -86,6 +89,14 @@ Patch24: sudo-1.9.12-CVE-2023-22809-whitelist.patch
 Patch25: sudo-1.9.12-CVE-2023-22809-backports.patch
 Patch26: sudo-1.9.12-CVE-2023-22809.patch
 
+# muertos: ports of upstream sudo fixes to 1.8.23
+# CVE-2025-32462: -h host honored when running a command (upstream d530367828)
+Patch27: sudo-1.8.23-CVE-2025-32462.patch
+# CVE-2026-35535: mailer runs after a failed privilege drop (upstream 3e474c2f20)
+Patch28: sudo-1.8.23-CVE-2026-35535.patch
+# CVE-2026-96512: user TZ shifts NOTBEFORE/NOTAFTER (upstream db669167ca, 1820a34968)
+Patch29: sudo-1.8.23-CVE-2026-96512.patch
+
 %description
 Sudo (superuser do) allows a system administrator to give certain
 users (or groups of users) the ability to run some (or all) commands
@@ -142,6 +153,10 @@ plugins that use %{name}.
 %patch24 -p1 -b .whitelist
 %patch25 -p1 -b .backports
 %patch26 -p1 -b .cve
+
+%patch27 -p1 -b .CVE-2025-32462
+%patch28 -p1 -b .CVE-2026-35535
+%patch29 -p1 -b .CVE-2026-96512
 
 %build
 autoreconf -I m4 -fv --install
@@ -278,6 +293,11 @@ rm -rf %{buildroot}
 %{_mandir}/man8/sudo_plugin.8*
 
 %changelog
+* Sun Nov 01 2026 muertos <jbkf-dev-sandpiper@jacobrakai.org> - 1.8.23-10.3.muertos1
+- CVE-2025-32462 sudo: -h host honored when running a command
+- CVE-2026-35535 sudo: mailer not stopped when its privilege drop fails
+- CVE-2026-96512 sudo: user TZ shifts NOTBEFORE/NOTAFTER evaluation
+
 * Wed Jan 11 2023 Radovan Sroka <rsroka@redhat.com> - 1.8.23-10.3
 RHEL 7.9.Z ERRATUM
 - CVE-2023-22809 sudo: arbitrary file write with privileges of the RunAs user

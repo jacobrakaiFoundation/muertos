@@ -19,6 +19,26 @@ This rebuilds one vault SRPM unchanged, in an amd64 el7 container (Rosetta on Ap
 silicon), and writes the results to `out/<package>/`. `tree` rebuilt this way has the
 same file list as upstream and installs on stock 7.9.
 
+### Security backports
+
+```bash
+./backport.sh build sudo
+```
+
+```bash
+./backport.sh test sudo
+```
+
+`packages/<package>/` holds the package's spec (the vault spec, committed unchanged
+first so the next commit shows our edits), our patches, and `test.sh`. `build` verifies
+the vault SRPM, overlays that directory and builds into `out/<package>/`; `test` upgrades
+el7's last build to ours on a stock `centos:7.9.2009` container and checks each CVE as
+an unprivileged user. CI (`.github/workflows/backports.yml`) runs both per package.
+
+| Package | Release | CVEs |
+|---|---|---|
+| sudo | 1.8.23-10.el7_9.3.muertos1 | CVE-2025-32462, CVE-2026-35535, CVE-2026-96512 |
+
 ### kernel-lt
 
 ```bash
