@@ -23,6 +23,10 @@ jobs:
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        # Explicit, so the step runs with pipefail.
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - name: Bump to the latest 6.12.y
