@@ -64,13 +64,13 @@ qemu-system-x86_64 -enable-kvm -cpu host -m 4096 -smp 2 \
 
 wait_for_ssh
 echo "stock kernel: $(guest uname -r)"
-# Baseline, so a failed unit after the reboot can be told apart from one the image
-# already had.
-echo "failed units on stock kernel:"
-guest systemctl --failed --no-legend
+# Units the stock image already fails (cloud-final: the image has no NetworkManager to
+# restart) are not the new kernel's fault; guest-checks.sh ignores these.
+guest systemctl --failed --no-legend | awk '{print $1}' > stock-failed-units
+echo "failed units on stock kernel: $(tr '\n' ' ' < stock-failed-units)"
 
 scp "${ssh_opts[@]}" -P "$ssh_port" "$rpm_path" "$root/build/vault.repo" "$root/tests/guest-checks.sh" \
-  centos@127.0.0.1:
+  stock-failed-units centos@127.0.0.1:
 guest sudo sh -c 'rm -f /etc/yum.repos.d/*.repo && cp vault.repo /etc/yum.repos.d/'
 guest sudo yum -y localinstall "$(basename "$rpm_path")"
 expected="$(guest rpm -qp --qf '%{VERSION}-%{RELEASE}.%{ARCH}' "$(basename "$rpm_path")")"
@@ -79,4 +79,4 @@ echo "default boot entry: $(guest sudo grubby --default-kernel)"
 guest sudo systemctl reboot || true
 sleep 15
 wait_for_ssh
-guest sudo bash guest-checks.sh "$expected"
+guest sudo bash guest-checks.sh "$expected" stock-failed-units
