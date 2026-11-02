@@ -1,3 +1,5 @@
 out/
 .claude/
 default.profraw
+survey/cache/
+survey/rhel7_cves.json

@@ -36,5 +36,8 @@ same file list as upstream and installs on stock 7.9.
 - **Patch sources.** Candidates are upstream project commits and Debian/Ubuntu LTS
   backports for the same versions. Whether any commercial el7 extended-support
   vendor publishes its patched sources is still unchecked.
-- **Priority list.** The first packages to patch: kernel, openssl, openssh, glibc,
-  sudo, curl, and the others behind post-EOL CVEs.
+- **Priority list.** `survey/CVES.md` ranks the 1,129 post-EOL package/CVE pairs. Run
+  `python3 survey/rhel7_cves.py survey/cache survey/rhel7_cves.json` then
+  `python3 survey/report.py survey/rhel7_cves.json survey/CVES.md` to refresh it.
+- **Kernel.** See `docs/kernel.md`. Recommended: `kernel-lt` on 6.12 LTS by default,
+  with stock 3.10 frozen and Critical/remote fixes only.
