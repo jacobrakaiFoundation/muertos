@@ -2,17 +2,32 @@
 # Sign and publish on the mini with the YubiKey. CI only builds unsigned RPMs; the key
 # never leaves the card. Each signature needs a PIN and a touch.
 # Needs (brew install rpm): rpmsign on the host; repo metadata is built in the el7 container.
-#   ./release/publish-on-mini.sh <CI run id>
+#   ./release/publish-on-mini.sh <CI run id>...
+# Each publish replaces el7/ whole, so pass a run for every workflow that ships RPMs
+# (kernel-lt, muertos-release).
 set -euo pipefail
 
-run_id="$1"
+if [ "$#" -eq 0 ]; then
+  echo "usage: $0 <CI run id>..." >&2
+  exit 2
+fi
 root="$(cd "$(dirname "$0")/.." && pwd)"
 fpr="$(cat "$root/release/signing-key.fpr")"
 export GNUPGHOME="$HOME/.muertos-gnupg"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 
-gh run download "$run_id" --repo jacobrakaiFoundation/muertos --dir "$stage/in"
+for run_id in "$@"; do
+  gh run download "$run_id" --repo jacobrakaiFoundation/muertos --dir "$stage/in/$run_id"
+done
+# Runs land in one flat directory; the same file name from two runs means two runs of
+# one workflow were passed, and one build would silently replace the other.
+dupes="$(find "$stage/in" -name '*.rpm' -exec basename {} \; | sort | uniq -d)"
+if [ -n "$dupes" ]; then
+  echo "same RPM in more than one run ($*); pass one run per workflow:" >&2
+  echo "$dupes" >&2
+  exit 1
+fi
 mkdir -p "$stage/repo/x86_64"
 find "$stage/in" -name '*.rpm' -exec cp {} "$stage/repo/x86_64/" \;
 
@@ -37,5 +52,5 @@ rm -rf "${pages:?}/el7" && mkdir -p "$pages/el7"
 cp -R "$stage/repo/." "$pages/el7/"
 cp "$root/release/RPM-GPG-KEY-muertos" "$pages/"
 git -C "$pages" add -A
-git -C "$pages" commit -q -m "Publish run $run_id"
+git -C "$pages" commit -q -m "Publish runs $*"
 echo "Review $pages, then: git -C $pages push origin HEAD:gh-pages"

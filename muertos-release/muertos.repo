@@ -1,0 +1,33 @@
+# muertōs: rebuilt el7 packages carrying security fixes, signed with our key.
+# Our packages carry .muertos<N> in their Release, so yum prefers them over .el7.
+[muertos]
+name=muertos - el7 security fixes
+baseurl=https://jacobrakaifoundation.github.io/muertos/el7/
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-muertos
+
+# CentOS 7.9.2009 frozen at EOL. These replace base/updates/extras from
+# CentOS-Base.repo, whose mirrorlist.centos.org no longer answers; the package's
+# %post disables those. Own IDs, because yum ignores a second repo with the same ID.
+# vault answers 403 for *.sqlite.bz2 metadata, hence mddownloadpolicy=xml.
+[vault-base]
+name=CentOS-7.9.2009 - Base (vault)
+baseurl=https://vault.centos.org/7.9.2009/os/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
+
+[vault-updates]
+name=CentOS-7.9.2009 - Updates (vault)
+baseurl=https://vault.centos.org/7.9.2009/updates/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
+
+[vault-extras]
+name=CentOS-7.9.2009 - Extras (vault)
+baseurl=https://vault.centos.org/7.9.2009/extras/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
