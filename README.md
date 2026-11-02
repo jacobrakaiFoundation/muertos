@@ -40,11 +40,16 @@ This builds the 6.12 LTS `kernel-lt` RPM (`kernel/kernel-lt.spec`) into `out/ker
 
 ## Open decisions
 
-- **Name.** "CentOS" is a Red Hat trademark, so a public fork can't ship under it.
-  Upstream branding (`centos-release`, logos) has to be replaced, the way
-  Rocky Linux and AlmaLinux did it.
-- **Signing key.** We need a GPG key that the owner generates and keeps offline.
-- **Hosting.** Where the public yum repo lives.
+- **Name (decided).** The project and repo are `muertos` (displayed muertōs). We never use
+  "CentOS" as a product name; docs say "built from CentOS 7 sources" and "binary
+  compatible with CentOS 7". `centos-release` is replaced by `muertos-release`, and
+  upstream logos are not shipped.
+- **Hosting (decided).** v0.1 serves the yum repo as static files from GitHub Pages
+  (no credentials, free for public repos). Move to Cloudflare R2 if the site nears
+  Pages' ~1 GB limit, which the kernel RPMs will do first.
+- **Signing key (open, owner only).** A GPG key that the owner generates and keeps
+  offline; only the public half is committed. Until then CI signs with a throwaway test
+  key so the upgrade test can run, and packages from that key are never published.
 - **Patch sources.** Candidates are upstream project commits and Debian/Ubuntu LTS
   backports for the same versions. Whether any commercial el7 extended-support
   vendor publishes its patched sources is still unchecked.
