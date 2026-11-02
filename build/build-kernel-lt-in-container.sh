@@ -7,7 +7,7 @@ yum-builddep -y /kernel/kernel-lt.spec
 
 top=/home/builder/rpmbuild
 mkdir -p "$top/SOURCES"
-cp /kernel/sources/linux-*.tar.xz /kernel/config-x86_64 "$top/SOURCES/"
+cp /kernel/sources/linux-*.tar.xz /kernel/config-x86_64 /kernel/*.patch "$top/SOURCES/"
 chown -R builder "$top"
 runuser -u builder -- rpmbuild -bb --define "_topdir $top" /kernel/kernel-lt.spec
 

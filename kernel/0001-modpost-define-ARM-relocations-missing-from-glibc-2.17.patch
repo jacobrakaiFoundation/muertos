@@ -1,0 +1,35 @@
+--- a/scripts/mod/modpost.c	2026-11-01 18:08:36
++++ b/scripts/mod/modpost.c	2026-11-01 18:08:36
+@@ -25,6 +25,32 @@
+ #include <list.h>
+ #include <xalloc.h>
+ #include "modpost.h"
++
++/* ARM relocations missing from older libc <elf.h> (glibc 2.17 on el7). */
++#ifndef R_ARM_CALL
++#define R_ARM_CALL		28
++#endif
++#ifndef R_ARM_JUMP24
++#define R_ARM_JUMP24		29
++#endif
++#ifndef R_ARM_THM_JUMP24
++#define R_ARM_THM_JUMP24	30
++#endif
++#ifndef R_ARM_MOVW_ABS_NC
++#define R_ARM_MOVW_ABS_NC	43
++#endif
++#ifndef R_ARM_MOVT_ABS
++#define R_ARM_MOVT_ABS		44
++#endif
++#ifndef R_ARM_THM_MOVW_ABS_NC
++#define R_ARM_THM_MOVW_ABS_NC	47
++#endif
++#ifndef R_ARM_THM_MOVT_ABS
++#define R_ARM_THM_MOVT_ABS	48
++#endif
++#ifndef R_ARM_THM_JUMP19
++#define R_ARM_THM_JUMP19	51
++#endif
+ #include "../../include/linux/license.h"
+ 
+ static bool module_enabled;

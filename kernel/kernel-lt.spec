@@ -14,6 +14,7 @@ License: GPLv2
 URL: https://www.kernel.org
 Source0: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz
 Source1: config-x86_64
+Patch0: 0001-modpost-define-ARM-relocations-missing-from-glibc-2.17.patch
 ExclusiveArch: x86_64
 
 BuildRequires: devtoolset-11-gcc devtoolset-11-make devtoolset-11-binutils
@@ -29,6 +30,7 @@ the CentOS 7 3.10 kernel's config and built for el7 userland.
 
 %prep
 %setup -q -n linux-%{version}
+%patch0 -p1
 cp %{SOURCE1} .config
 
 %build
