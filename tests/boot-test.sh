@@ -64,6 +64,10 @@ qemu-system-x86_64 -enable-kvm -cpu host -m 4096 -smp 2 \
 
 wait_for_ssh
 echo "stock kernel: $(guest uname -r)"
+# Baseline, so a failed unit after the reboot can be told apart from one the image
+# already had.
+echo "failed units on stock kernel:"
+guest systemctl --failed --no-legend
 
 scp "${ssh_opts[@]}" -P "$ssh_port" "$rpm_path" "$root/build/vault.repo" "$root/tests/guest-checks.sh" \
   centos@127.0.0.1:

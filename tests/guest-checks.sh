@@ -14,7 +14,15 @@ test "$(uname -r)" = "$expected_kernel"
 
 check "no failed systemd units"
 failed="$(systemctl --failed --no-legend)"
-test -z "$failed" || { echo "$failed"; exit 1; }
+if [ -n "$failed" ]; then
+  echo "$failed"
+  echo "kernel command line: $(cat /proc/cmdline)"
+  for unit in $(echo "$failed" | awk '{print $1}'); do
+    echo "--- journal for $unit"
+    journalctl -b --no-pager -u "$unit" | tail -40
+  done
+  exit 1
+fi
 
 check "SELinux enforcing"
 test "$(getenforce)" = Enforcing
