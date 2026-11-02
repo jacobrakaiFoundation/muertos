@@ -19,6 +19,18 @@ This rebuilds one vault SRPM unchanged, in an amd64 el7 container (Rosetta on Ap
 silicon), and writes the results to `out/<package>/`. `tree` rebuilt this way has the
 same file list as upstream and installs on stock 7.9.
 
+### kernel-lt
+
+```bash
+./kernel.sh build
+```
+
+This builds the 6.12 LTS `kernel-lt` RPM (`kernel/kernel-lt.spec`) into `out/kernel-lt/`.
+`./kernel.sh config` regenerates `kernel/config-x86_64` from el7's last 3.10 config plus
+`kernel/config-overrides`. CI (`.github/workflows/kernel-lt.yml`) builds it, then runs
+`tests/boot-test.sh`, which installs it on a stock 7.9 VM under KVM, reboots, and runs
+`tests/guest-checks.sh`.
+
 ## Scope
 
 - Base: 7.9.2009 `os` + `updates` + `extras`, x86_64 only.

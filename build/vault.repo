@@ -1,30 +1,45 @@
 # CentOS 7.9.2009 frozen at EOL; mirror.centos.org no longer serves el7.
+# vault answers 403 for *.sqlite.bz2 metadata (seen 2026-11-02), so every repo
+# uses the XML metadata instead (mddownloadpolicy=xml).
 [base]
 name=CentOS-7.9.2009 - Base
 baseurl=https://vault.centos.org/7.9.2009/os/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
 
 [updates]
 name=CentOS-7.9.2009 - Updates
 baseurl=https://vault.centos.org/7.9.2009/updates/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
 
 [extras]
 name=CentOS-7.9.2009 - Extras
 baseurl=https://vault.centos.org/7.9.2009/extras/$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
 
 [base-source]
 name=CentOS-7.9.2009 - Base Sources
 baseurl=https://vault.centos.org/7.9.2009/os/Source/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
 
 [updates-source]
 name=CentOS-7.9.2009 - Updates Sources
 baseurl=https://vault.centos.org/7.9.2009/updates/Source/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+mddownloadpolicy=xml
+
+# Software Collections: devtoolset-11 (gcc 11, make 4.3) for building 6.x kernels.
+[sclo-rh]
+name=CentOS-7.9.2009 - SCLo rh
+baseurl=https://vault.centos.org/7.9.2009/sclo/$basearch/rh/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
+mddownloadpolicy=xml

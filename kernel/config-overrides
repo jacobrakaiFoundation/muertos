@@ -1,0 +1,16 @@
+# Applied on top of el7's 3.10 config after olddefconfig. Each line must survive into
+# config-x86_64 verbatim, or update-kernel-config fails.
+
+# No debuginfo (and so no BTF): keeps the build small; we ship no -debuginfo package.
+CONFIG_DEBUG_INFO_NONE=y
+
+# The el7 config names Red Hat's certificate files, which we don't have.
+CONFIG_SYSTEM_TRUSTED_KEYS=""
+CONFIG_MODULE_SIG_KEY="certs/signing_key.pem"
+
+# SELinux enforcing is the el7 default. 6.12's default CONFIG_LSM lists selinux
+# ahead of the other exclusive LSMs, so it is the one that activates.
+CONFIG_SECURITY_SELINUX=y
+
+# Keep older XFS V4 filesystems mountable.
+CONFIG_XFS_SUPPORT_V4=y

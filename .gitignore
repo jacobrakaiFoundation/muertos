@@ -3,3 +3,4 @@ out/
 default.profraw
 survey/cache/
 survey/rhel7_cves.json
+kernel/sources/
