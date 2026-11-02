@@ -1,0 +1,62 @@
+name: kernel-lt-bump
+
+# Opens a PR moving kernel-lt to the latest 6.12.y stable release. Merging it, and signing on
+# the mini, stay human steps.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: kernel-lt-bump
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  # Pushes made with GITHUB_TOKEN start no workflows, so the bump dispatches kernel-lt itself.
+  actions: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump to the latest 6.12.y
+        run: |
+          latest="$(curl -fsSL https://www.kernel.org/releases.json \
+            | jq -r '.releases[] | select(.version | test("^6\\.12\\.[0-9]+$")) | .version')"
+          if [ "$(wc -l <<< "$latest")" != 1 ] || [ -z "$latest" ]; then
+            echo "expected one 6.12.y release in releases.json, got: '$latest'" >&2; exit 1
+          fi
+          current="$(awk '/^Version:/ {print $2}' kernel/kernel-lt.spec)"
+          if [ "$latest" = "$current" ]; then
+            echo "kernel-lt $current is the latest 6.12.y"; exit 0
+          fi
+
+          branch="kernel-lt-$latest"
+          open="$(gh pr list --head "$branch" --state open --json number --jq length)"
+          if [ "$open" != 0 ]; then
+            echo "a PR for $branch is already open"; exit 0
+          fi
+
+          ./kernel-lt-bump.sh "$latest"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git commit -am "kernel-lt: $current -> $latest"
+          git push --force origin "$branch"
+          gh pr create --base main --head "$branch" --title "kernel-lt: $current -> $latest" --body "$(cat <<BODY
+          Upstream 6.12.y stable release, opened by kernel-lt-bump.
+
+          - Changes: https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-$latest
+          - sha256 from kernel.org's sha256sums.asc, verified against the checksum autosigner key
+          - config-x86_64 regenerated with \`./kernel.sh config\`
+
+          Merge after kernel-lt builds and boot-tests green on this branch, then sign on the mini.
+          BODY
+          )"
+          gh workflow run kernel-lt.yml --ref "$branch"
