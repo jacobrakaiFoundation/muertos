@@ -32,8 +32,10 @@ cloud-localds seed.iso user-data
 
 ssh_opts=(-i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
           -o ConnectTimeout=5 -o LogLevel=ERROR)
+# ssh joins its arguments into one string for the remote shell, so quote each one
+# (%q) to keep arguments like `sh -c '...'` intact.
 guest() {
-  ssh "${ssh_opts[@]}" -p "$ssh_port" centos@127.0.0.1 "$@"
+  ssh "${ssh_opts[@]}" -p "$ssh_port" centos@127.0.0.1 "$(printf '%q ' "$@")"
 }
 
 wait_for_ssh() {
