@@ -9,9 +9,13 @@ yum -y -q install yum-utils
 yum-config-manager -q --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 yum -y -q install docker-ce
 systemctl start docker
+# Pinned by digest: musl 1.2.6 (current nginx:alpine and nginx:stable-alpine) implements
+# pwrite() with pwritev2, which el7's libseccomp 2.3.1 predates, so docker's default seccomp
+# profile denies it with EPERM on any el7 kernel. This image is on musl 1.2.5.
+image=nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236
 # Named per kernel, so the stock baseline's container doesn't collide with the kernel-lt run.
 name="web-$(uname -r)"
-docker run -p 8080:80 -d --name "$name" nginx:alpine
+docker run -p 8080:80 -d --name "$name" "$image"
 # Wait for nginx rather than a fixed sleep.
 for _ in $(seq 30); do
   curl -fsS -o /dev/null http://127.0.0.1:8080/ && break
@@ -38,8 +42,8 @@ if ! curl -fsS -o /dev/null http://127.0.0.1:8080/; then
   # EPERM is the errno docker's default seccomp profile returns for a blocked syscall.
   # nginx daemonizes here, so its master writes the pid file and the shell can read it.
   echo "nginx with the default seccomp profile, then with seccomp unconfined:"
-  docker run --rm nginx:alpine sh -c 'nginx && sleep 1 && echo "started, pid $(cat /run/nginx.pid)"' || true
-  docker run --rm --security-opt seccomp=unconfined nginx:alpine \
+  docker run --rm "$image" sh -c 'nginx && sleep 1 && echo "started, pid $(cat /run/nginx.pid)"' || true
+  docker run --rm --security-opt seccomp=unconfined "$image" \
     sh -c 'nginx && sleep 1 && echo "started, pid $(cat /run/nginx.pid)"' || true
   exit 1
 fi
