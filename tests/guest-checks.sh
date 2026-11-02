@@ -57,12 +57,27 @@ done
 if ! curl -fsS -o /dev/null http://127.0.0.1:8080/; then
   docker ps -a
   docker logs web
+  echo "container state: $(docker inspect -f '{{.State.Status}} exit={{.State.ExitCode}}' web)"
   web_ip="$(docker inspect -f '{{.NetworkSettings.IPAddress}}' web)"
-  echo "curl container IP $web_ip:80 directly:"
-  curl -sS -o /dev/null -w '%{http_code}\n' "http://$web_ip:80/" || true
+  if [ -n "$web_ip" ]; then
+    echo "curl container IP $web_ip:80 directly:"
+    curl -sS -o /dev/null -w '%{http_code}\n' "http://$web_ip:80/" || true
+  else
+    echo "container has no IP; it is not running"
+  fi
   echo "listening on 8080:"
   ss -ltnp | grep ':8080' || echo "(nothing)"
   iptables -t nat -S
+  # An EPERM inside the container points at the storage driver or SELinux on this kernel.
+  docker info --format 'storage driver: {{.Driver}} {{.DriverStatus}}; security: {{.SecurityOptions}}'
+  echo "container-selinux: $(rpm -q container-selinux || true)"
+  echo "SELinux AVC denials this boot:"
+  ausearch -m avc,user_avc -ts boot -i || echo "(none)"
+  echo "write /run/nginx.pid in the image, enforcing then permissive:"
+  docker run --rm nginx:alpine sh -c 'echo 1 > /run/nginx.pid && echo writable' || true
+  setenforce 0
+  docker run --rm nginx:alpine sh -c 'echo 1 > /run/nginx.pid && echo writable' || true
+  setenforce 1
   exit 1
 fi
 docker rm -f web
