@@ -1,0 +1,30 @@
+# CentOS 7.9.2009 frozen at EOL; mirror.centos.org no longer serves el7.
+[base]
+name=CentOS-7.9.2009 - Base
+baseurl=https://vault.centos.org/7.9.2009/os/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[updates]
+name=CentOS-7.9.2009 - Updates
+baseurl=https://vault.centos.org/7.9.2009/updates/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[extras]
+name=CentOS-7.9.2009 - Extras
+baseurl=https://vault.centos.org/7.9.2009/extras/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[base-source]
+name=CentOS-7.9.2009 - Base Sources
+baseurl=https://vault.centos.org/7.9.2009/os/Source/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[updates-source]
+name=CentOS-7.9.2009 - Updates Sources
+baseurl=https://vault.centos.org/7.9.2009/updates/Source/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
