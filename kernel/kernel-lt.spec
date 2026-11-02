@@ -2,6 +2,8 @@
 # stock 3.10 kernel and becomes the boot default; removing it falls back to 3.10.
 %global kver %{version}-%{release}.%{_target_cpu}
 %global devtoolset /opt/rh/devtoolset-11/root/usr/bin
+# RHEL 9's x86_64 default, replacing el7's RHEL-only crashkernel=auto (see %post).
+%global crashkernel crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M
 %define debug_package %{nil}
 # Only compress docs: el7's default brp scripts would rewrite module files.
 %define __spec_install_post /usr/lib/rpm/brp-compress
@@ -19,7 +21,7 @@ ExclusiveArch: x86_64
 
 BuildRequires: devtoolset-11-gcc devtoolset-11-make devtoolset-11-binutils
 BuildRequires: bc bison flex perl openssl openssl-devel elfutils-libelf-devel kmod
-Requires(post): grubby dracut kmod
+Requires(post): grubby dracut kmod grep
 Requires(preun): grubby
 # Makes yum keep several kernel-lt versions installed instead of replacing them.
 Provides: installonlypkg(kernel)
@@ -51,6 +53,13 @@ touch %{buildroot}/boot/initramfs-%{kver}.img
 
 %post
 /sbin/new-kernel-pkg --package kernel-lt --mkinitrd --dracut --depmod --make-default --install %{kver}
+# el7 boots with crashkernel=auto, which only RHEL's own kernels understand; upstream
+# reserves nothing for it, so kdump fails with "No memory reserved for crash kernel".
+# Give this kernel's entry RHEL 9's explicit equivalent, unless the user set their own.
+if /sbin/grubby --info=/boot/vmlinuz-%{kver} | grep -q 'crashkernel=auto'; then
+  /sbin/grubby --update-kernel=/boot/vmlinuz-%{kver} --remove-args=crashkernel=auto \
+    --args=%{crashkernel}
+fi
 
 %preun
 /sbin/new-kernel-pkg --rminitrd --rmmoddep --remove %{kver}

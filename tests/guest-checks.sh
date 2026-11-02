@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Runs as root inside the booted guest: ./guest-checks.sh <expected uname -r>
+# Runs as root inside the booted guest:
+#   ./guest-checks.sh <expected uname -r> <file of units already failed on the stock kernel>
 # Pass criteria from docs/kernel.md.
 set -euo pipefail
 
 expected_kernel="$1"
+stock_failed_units="$2"
 
 check() {
   echo "CHECK $1"
@@ -12,12 +14,12 @@ check() {
 check "running kernel is $expected_kernel"
 test "$(uname -r)" = "$expected_kernel"
 
-check "no failed systemd units"
-failed="$(systemctl --failed --no-legend)"
+check "no failed systemd units beyond the stock kernel's"
+failed="$(systemctl --failed --no-legend | awk '{print $1}' | grep -vxF -f "$stock_failed_units" || true)"
 if [ -n "$failed" ]; then
-  echo "$failed"
+  systemctl --failed --no-legend
   echo "kernel command line: $(cat /proc/cmdline)"
-  for unit in $(echo "$failed" | awk '{print $1}'); do
+  for unit in $failed; do
     echo "--- journal for $unit"
     journalctl -b --no-pager -u "$unit" | tail -40
   done
