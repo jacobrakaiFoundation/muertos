@@ -47,9 +47,24 @@ yum -y -q install yum-utils
 yum-config-manager -q --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 yum -y -q install docker-ce
 systemctl start docker
-docker run --rm -p 8080:80 -d --name web nginx:alpine
-sleep 3
-curl -fsS -o /dev/null http://127.0.0.1:8080/
+docker run -p 8080:80 -d --name web nginx:alpine
+# Wait for nginx rather than a fixed sleep; on failure, the container IP check tells
+# "nginx is not up" apart from "port publishing is broken on this kernel".
+for _ in $(seq 30); do
+  curl -fsS -o /dev/null http://127.0.0.1:8080/ && break
+  sleep 1
+done
+if ! curl -fsS -o /dev/null http://127.0.0.1:8080/; then
+  docker ps -a
+  docker logs web
+  web_ip="$(docker inspect -f '{{.NetworkSettings.IPAddress}}' web)"
+  echo "curl container IP $web_ip:80 directly:"
+  curl -sS -o /dev/null -w '%{http_code}\n' "http://$web_ip:80/" || true
+  echo "listening on 8080:"
+  ss -ltnp | grep ':8080' || echo "(nothing)"
+  iptables -t nat -S
+  exit 1
+fi
 docker rm -f web
 
 echo "kernel error-level messages (informational):"
