@@ -14,16 +14,17 @@ vault.centos.org SRPM ---> verify sig ---> + backport patch ---> rpmbuild (el7 x
 On an existing 7.9 host, VM guest or container:
 
 ```bash
-yum install https://REPO_URL/muertos-release.noarch.rpm
+yum install https://jacobrakaifoundation.github.io/muertos/el7/x86_64/muertos-release-0.1-1.el7.noarch.rpm
 ```
 
 ```bash
 yum update
 ```
 
-`REPO_URL` is a placeholder until the GitHub Pages repo is live. `muertos-release`
+The repo is served from https://jacobrakaifoundation.github.io/muertos/. `muertos-release`
 replaces `centos-release`, points yum at our repo and installs our signing key
-(`release/RPM-GPG-KEY-muertos`). Check the key before trusting it:
+(`release/RPM-GPG-KEY-muertos`, also at
+https://jacobrakaifoundation.github.io/muertos/RPM-GPG-KEY-muertos). Check the key before trusting it:
 
 ```bash
 gpg --show-keys --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-muertos
