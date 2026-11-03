@@ -22,7 +22,9 @@ case "$task" in
       muertos-build:el7 bash /src/packages/backport-in-container.sh "$pkg"
     ;;
   test)
-    docker run --rm --platform linux/amd64 -v "$root:/src:ro" centos:7.9.2009 \
+    # A tun device and NET_ADMIN let tests exercise tunnel forwarding (openssh).
+    docker run --rm --platform linux/amd64 --cap-add NET_ADMIN --device /dev/net/tun \
+      -v "$root:/src:ro" centos:7.9.2009 \
       bash "/src/packages/$pkg/test.sh" "/src/out/$pkg"
     ;;
   *) echo "unknown task '$task': expected build or test" >&2; exit 2 ;;
