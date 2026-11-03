@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [sudo]
+        package: [sudo, ruby]
     steps:
       - uses: actions/checkout@v4
       - name: Build ${{ matrix.package }}
