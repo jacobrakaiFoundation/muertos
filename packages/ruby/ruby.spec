@@ -1,3 +1,6 @@
+# muertos: upstream built this as 39.el7_9; our build root's dist is .el7, which
+# would sort before the installed package, so pin the upstream dist.
+%global dist .el7_9
 %global major_version 2
 %global minor_version 0
 %global teeny_version 0
@@ -27,7 +30,7 @@
 
 
 %global release 39
-%{!?release_string:%global release_string %{?development_release:0.}%{release}%{?development_release:.%{development_release}}%{?dist}}
+%{!?release_string:%global release_string %{?development_release:0.}%{release}%{?development_release:.%{development_release}}%{?dist}.muertos1}
 
 %global rubygems_version 2.0.14.1
 
@@ -332,6 +335,15 @@ Patch67: ruby-2.4.6-Applied-security-patches-for-RubyGems.patch
 # Errno::EADDRNOTAVAIL: Cannot assign requested address - connect(2)
 # https://github.com/ruby/ruby/commit/e8e6ecdef014d9c48211b06be288e17148cd438b
 Patch68: ruby-2.2.0-test_udp_server-dont-test-IPv6-link-local-addresses.patch
+
+# muertos: ports of upstream Onigmo fixes to 2.0.0 (ruby-lang.org news 2026-10-23).
+# The new error codes are -225..-227 because 2.0 already uses -224.
+# CVE-2026-89078: double free when parsing fails after an alternation (ruby/ruby#13332)
+Patch100: ruby-2.0.0-CVE-2026-89078.patch
+# CVE-2026-93577, CVE-2026-97229: compiled pattern size overflows int (ruby/ruby#19020)
+Patch101: ruby-2.0.0-CVE-2026-93577-CVE-2026-97229.patch
+# CVE-2026-110264: repeat and null-check IDs overflow (ruby/ruby#16801)
+Patch102: ruby-2.0.0-CVE-2026-110264.patch
 
 Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 Requires: ruby(rubygems) >= %{rubygems_version}
@@ -642,6 +654,9 @@ Tcl/Tk interface for the object-oriented scripting language Ruby.
 %patch66 -p1
 %patch67 -p1
 %patch68 -p1
+%patch100 -p1
+%patch101 -p1
+%patch102 -p1
 
 # Provide an example of usage of the tapset:
 cp -a %{SOURCE3} .
@@ -1154,6 +1169,11 @@ OPENSSL_ENABLE_MD5_VERIFY=1 make check TESTS="-v $DISABLE_TESTS"
 %{ruby_libdir}/tkextlib
 
 %changelog
+* Mon Nov 02 2026 muertos <jbkf-dev-godwit@jacobrakai.org> - 2.0.0.648-39.muertos1
+- CVE-2026-89078 ruby: double free in regular expression parser
+- CVE-2026-93577 CVE-2026-97229 ruby: integer overflow in regular expression compiler
+- CVE-2026-110264 ruby: repeat ID overflow in regular expression compiler
+
 * Mon Sep 13 2021 Vít Ondruch <vondruch@redhat.com> - 2.0.0.648-39
 - Bump the release to fix the upgrade path from RHEL7 EUS.
   Resolves: rhbz#1993504

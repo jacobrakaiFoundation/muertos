@@ -18,8 +18,11 @@ rm "$top/SOURCES/$pkg.spec"
 cp /src/packages/"$pkg"/*.patch "$top/SOURCES/"
 cp /src/packages/"$pkg"/"$pkg".spec "$top/"
 
-yum-builddep -y "$top/$pkg.spec"
 chown -R builder "$top"
+# Resolve build deps from our SRPM, not the spec: some specs (ruby) read files from
+# %{_sourcedir} while parsing, which only exist under our _topdir.
+runuser -u builder -- rpmbuild -bs --define "_topdir $top" "$top/$pkg.spec"
+yum-builddep -y "$top"/SRPMS/*.src.rpm
 runuser -u builder -- rpmbuild -ba --define "_topdir $top" "$top/$pkg.spec"
 
 mkdir -p "/out/$pkg"
