@@ -43,4 +43,43 @@ check "CVE-2026-110264: too many range repeats or null checks raise instead of w
 expect_regexp_error "'(?:foobar){0,100}' * 100000" 'too many range repeat'
 expect_regexp_error "'(?:(?:foo)?|(?:bar)?)*' * 100000" 'too many null check'
 
+check "CVE-2026-80212: decoding unknown resource types registers no classes"
+ruby -rresolv -e '
+  before = Resolv::DNS::Resource::Generic.constants.size
+  1000.times {|i| Resolv::DNS::Resource.get_class(60000 + i, 1) }
+  raise "constants grew" unless Resolv::DNS::Resource::Generic.constants.size == before
+  a = Resolv::DNS::Resource.get_class(65000, 1)
+  b = Resolv::DNS::Resource.get_class(65000, 1)
+  raise "unknown types no longer compare equal" unless a.new("x") == b.new("x")'
+
+check "CVE-2026-42258: Symbol arguments must be valid flag atoms"
+ruby -rnet/imap -e '
+  imap = Net::IMAP.allocate
+  imap.send(:validate_data, :Seen)
+  ["Seen\r\nA1 DELETE INBOX", "Seen Deleted", "Se]en"].each do |bad|
+    begin
+      imap.send(:validate_data, bad.to_sym)
+      raise "accepted #{bad.inspect}"
+    rescue Net::IMAP::DataFormatError
+    end
+  end'
+
+check "CVE-2026-42246: an early tagged OK cannot make STARTTLS succeed without TLS"
+ruby -rnet/imap -rsocket -e '
+  server = TCPServer.new("127.0.0.1", 0)
+  Thread.new do
+    sock = server.accept
+    # A MITM answers the predictable tag before the client sends STARTTLS.
+    sock.write("* OK ready\r\nRUBY0001 OK begin TLS now\r\n")
+    sleep 5
+  end
+  imap = Net::IMAP.new("127.0.0.1", server.addr[1])
+  sleep 0.5
+  begin
+    imap.starttls
+    raise "starttls returned without TLS"
+  rescue Net::IMAP::InvalidResponseError => e
+    puts e.message
+  end'
+
 echo "ALL CHECKS PASSED"
