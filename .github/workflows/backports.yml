@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [sudo, openssh]
+        package: [sudo, openssh, ruby]
     steps:
       - uses: actions/checkout@v4
       - name: Build ${{ matrix.package }}
