@@ -1,0 +1,26 @@
+name: muertos-release
+
+on:
+  push:
+    paths: [muertos-release/**, muertos-release.sh, release/RPM-GPG-KEY-muertos, build/Dockerfile, build/vault.repo, tests/release-checks.sh, .github/workflows/muertos-release.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: muertos-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build muertos-release RPM
+        run: ./muertos-release.sh build
+      - name: Install test on stock 7.9
+        run: ./muertos-release.sh test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: muertos-release-rpm
+          path: out/muertos-release/*.rpm
+          if-no-files-found: error
