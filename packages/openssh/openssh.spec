@@ -1,3 +1,6 @@
+# muertos: upstream built this as 23.el7_9; our build root's dist is .el7, which
+# would sort before the installed package, so pin the upstream dist.
+%global dist .el7_9
 # Do we want SELinux & Audit
 %if 0%{?!noselinux:1}
 %define WITH_SELINUX 1
@@ -71,7 +74,7 @@
 Summary: An open source implementation of SSH protocol versions 1 and 2
 Name: openssh
 Version: %{openssh_ver}
-Release: %{openssh_rel}%{?dist}%{?rescue_rel}
+Release: %{openssh_rel}%{?dist}%{?rescue_rel}.muertos1
 URL: http://www.openssh.com/portable.html
 #URL1: http://pamsshagentauth.sourceforge.net
 Source0: ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-%{version}.tar.gz
@@ -260,6 +263,13 @@ Patch978: openssh-8.7p1-upstream-cve-2021-41617.patch
 # b23fe83f06ee7e721033769cfa03ae840476d280
 Patch1015: openssh-9.3p1-upstream-cve-2023-38408.patch
 
+# muertos: ports of upstream OpenSSH fixes to 7.4p1
+# CVE-2026-35385: scp download may install a file setuid/setgid (upstream scp.c 1.273, 10.3p1,
+# plus the "mode &= ~mask" on received modes that 1.273 relies on and 7.4p1 lacks)
+Patch1100: openssh-7.4p1-CVE-2026-35385.patch
+# CVE-2026-59999: DisableForwarding does not override PermitTunnel (upstream serverloop.c 1.247, 10.4p1)
+Patch1101: openssh-7.4p1-CVE-2026-59999.patch
+
 License: BSD
 Group: Applications/Internet
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -355,7 +365,7 @@ Requires: openssh = %{version}-%{release}
 Summary: PAM module for authentication with ssh-agent
 Group: System Environment/Base
 Version: %{pam_ssh_agent_ver}
-Release: %{pam_ssh_agent_rel}.%{openssh_rel}%{?dist}%{?rescue_rel}
+Release: %{pam_ssh_agent_rel}.%{openssh_rel}%{?dist}%{?rescue_rel}.muertos1
 License: BSD
 
 %description
@@ -523,6 +533,8 @@ popd
 
 %patch100 -p1 -b .coverity
 %patch1015 -p1 -b .cve-2023-38408
+%patch1100 -p1 -b .CVE-2026-35385
+%patch1101 -p1 -b .CVE-2026-59999
 
 %if 0
 # Nothing here yet
@@ -842,6 +854,10 @@ getent passwd sshd >/dev/null || \
 %endif
 
 %changelog
+* Mon Nov 02 2026 muertos <jbkf-dev-godwit@jacobrakai.org> - 7.4p1-23.muertos1 + 0.10.3-2
+- CVE-2026-35385 openssh: scp download may be installed setuid or setgid
+- CVE-2026-59999 openssh: DisableForwarding=yes does not override PermitTunnel
+
 * Thu Jul 20 2023 Dmitry Belyavskiy <dbelyavs@redhat.com> - 7.4p1-23 + 0.10.3-2
 - Avoid remote code execution in ssh-agent PKCS#11 support
   Resolves: CVE-2023-38408
