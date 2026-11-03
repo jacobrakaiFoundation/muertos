@@ -32,16 +32,20 @@ mkdir -p "$stage/repo/x86_64"
 find "$stage/in" -name '*.rpm' -exec cp {} "$stage/repo/x86_64/" \;
 
 for rpm in "$stage"/repo/x86_64/*.rpm; do
-  rpmsign --define "_gpg_name $fpr" --addsign "$rpm"
+  rpmsign --define "_gpg_name $fpr" --define "__gpg $(command -v gpg)" --addsign "$rpm"
 done
-# Verify with the committed public key in a throwaway rpm db.
-rpmkeys --dbpath "$stage/db" --import "$root/release/RPM-GPG-KEY-muertos"
-rpmkeys --dbpath "$stage/db" --checksig "$stage"/repo/x86_64/*.rpm | grep -v ' signatures OK' \
-  && { echo "bad or unsigned RPM above" >&2; exit 1; } || true
-
 docker build --platform linux/amd64 -t muertos-build:el7 "$root/build"
+# Verify with el7's own rpm (what users' yum runs) and the committed public key. Host rpm 6
+# reports el7-built packages NOT OK because they lack the SHA256 header digests it expects.
+# An unsigned RPM still passes `rpm -K` on digests alone, so every line must also show "pgp".
+docker run --rm --platform linux/amd64 -v "$stage/repo:/repo" \
+  -v "$root/release/RPM-GPG-KEY-muertos:/key:ro" muertos-build:el7 sh -c '
+    rpm --import /key
+    out="$(rpm -K /repo/x86_64/*.rpm)" || { echo "$out" >&2; exit 1; }
+    echo "$out" | grep -v " pgp " && { echo "unsigned RPM above" >&2; exit 1; }
+    echo "$out"'
 docker run --rm --platform linux/amd64 -v "$stage/repo:/repo" muertos-build:el7 \
-  createrepo --general-compress-type=gz /repo
+  createrepo /repo
 gpg --detach-sign --armor -u "$fpr" -o "$stage/repo/repodata/repomd.xml.asc" "$stage/repo/repodata/repomd.xml"
 
 git -C "$root" fetch -q origin gh-pages 2>/dev/null || true
