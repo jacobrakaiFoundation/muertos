@@ -11,7 +11,7 @@ vault.centos.org SRPM ---> verify sig ---> + backport patch ---> rpmbuild (el7 x
 
 ## Install
 
-On an installed CentOS 7.9 (not yet live: needs the first publish to GitHub Pages):
+On an installed 7.9 host, VM guest or container:
 
 ```bash
 rpm --import https://jacobrakaifoundation.github.io/muertos/RPM-GPG-KEY-muertos
@@ -29,6 +29,17 @@ yum update
 repos) and our public key, and disables `CentOS-Base.repo`'s `base`/`updates`/`extras`,
 whose `mirrorlist.centos.org` is gone. It installs with `rpm`, not `yum`, because yum
 fails while those dead repos are enabled. Erasing it restores `CentOS-Base.repo`.
+
+Check the key before trusting it:
+
+```bash
+gpg --show-keys --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-muertos
+```
+
+The fingerprint must be `05A1 8F33 6342 71BA C146  DA93 4A36 2390 72B6 B1B6`.
+If it differs, remove the package and report it (`SECURITY.md`).
+
+What we support, and the kernel choice, is in `docs/support.md`.
 
 ## Build
 
