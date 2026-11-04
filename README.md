@@ -113,3 +113,7 @@ workflow: `./release/publish-on-mini.sh <kernel-lt run> <muertos-release run>`.
   `python3 survey/report.py survey/rhel7_cves.json survey/CVES.md` to refresh it.
 - **Kernel.** See `docs/kernel.md`. Recommended: `kernel-lt` on 6.12 LTS by default,
   with stock 3.10 frozen and Critical/remote fixes only.
+- **Capyloon shell.** `docs/capyloon-el7.md` maps the x86_64 reference port onto 7.9:
+  what Gecko 123, sway, and PipeWire need, which of those el7 already has, and how
+  the WSL tar is packed. The new libraries go in a prefix. They are not security
+  backports, and they do not change the rule above.
