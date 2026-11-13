@@ -10,7 +10,7 @@
 
 Name: kernel-lt
 Summary: Linux longterm kernel %{version} for el7
-Version: 6.12.115
+Version: 6.12.117
 Release: 1%{?dist}
 License: GPLv2
 URL: https://www.kernel.org
