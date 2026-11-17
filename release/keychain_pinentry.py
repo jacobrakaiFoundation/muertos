@@ -4,21 +4,35 @@
 It answers only "PIN" and "Admin PIN" prompts. It cancels instead of answering when gpg-agent
 reports a previous wrong PIN (SETERROR), so a bad Keychain value never burns more than one try,
 and it cancels any prompt for a new PIN or Reset Code, which this setup never asks for.
+Every PIN is released only after Touch ID approval (touchid-gate, built from touchid_gate.swift).
 """
 import subprocess
 import sys
 import urllib.parse
+from pathlib import Path
 
 KEYCHAIN_SERVICE_PIN = "muertos-yubikey-pin"
 KEYCHAIN_SERVICE_ADMIN_PIN = "muertos-yubikey-admin-pin"
 ERR_CANCELED = "ERR 83886179 Operation cancelled"
+TOUCHID_GATE = Path.home() / ".muertos-gnupg" / "touchid-gate"
 
 
 class PinentryRefused(Exception):
     """Raised when a prompt must not be answered from the Keychain."""
 
 
+def require_touchid(service: str) -> None:
+    result = subprocess.run(
+        [str(TOUCHID_GATE), f"release the {service} to sign with the muertos key"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise PinentryRefused(f"touch id not approved service={service} rc={result.returncode} stderr={result.stderr.strip()}")
+
+
 def read_keychain(service: str) -> str:
+    require_touchid(service)
     result = subprocess.run(
         ["/usr/bin/security", "find-generic-password", "-s", service, "-w"],
         capture_output=True,
