@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86 6.12.117 Kernel Configuration
+# Linux/x86 6.12.118 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.2.1 20220127 (Red Hat 11.2.1-9)"
 CONFIG_CC_IS_GCC=y
@@ -2615,7 +2615,6 @@ CONFIG_SATA_AHCI=m
 CONFIG_SATA_MOBILE_LPM_POLICY=3
 CONFIG_SATA_AHCI_PLATFORM=m
 # CONFIG_AHCI_DWC is not set
-# CONFIG_SATA_INIC162X is not set
 CONFIG_SATA_ACARD_AHCI=m
 CONFIG_SATA_SIL24=m
 CONFIG_ATA_SFF=y
