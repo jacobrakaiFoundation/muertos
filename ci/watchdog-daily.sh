@@ -5,7 +5,8 @@
 #   3. a pull request has been open for more than 7 days.
 # Each check keeps one rolling issue and closes it when the condition clears.
 #
-# Env: REPO, DEFAULT_BRANCH, GH_TOKEN. Optional: DRY_RUN=1. Run from a checkout of main.
+# Env: REPO, DEFAULT_BRANCH, GH_TOKEN. Optional: DRY_RUN=1. Run from a full-history checkout
+# of main (fetch-depth: 0): naming the run to sign needs the commit graph.
 set -euo pipefail
 
 : "${REPO:?}" "${DEFAULT_BRANCH:?}"
@@ -67,27 +68,39 @@ if ! grep -q '\.rpm$' "$work/pages.txt"; then
 fi
 
 : > "$work/missing.md"
-need() { # need <rpm name prefix> <workflow file>
-  if ! grep -qF "/$1" "$work/pages.txt"; then
-    run="$(gh run list -R "$REPO" --workflow "$2" --branch "$DEFAULT_BRANCH" --status success \
-      --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
-    echo "- \`$1\` — ${run:+last green \`$2\` run on $DEFAULT_BRANCH: \`$run\`}${run:-no green \`$2\` run on $DEFAULT_BRANCH yet}" >> "$work/missing.md"
+# need <rpm name prefix> <workflow file> <path the version lives under>
+# Names the run to sign: the newest green run on the default branch that built a commit at or
+# after the last change to that path. "The newest green run" alone is not enough: one that
+# finished before the version changed built the old version.
+need() {
+  local prefix="$1" workflow="$2" path="$3" changed run='' id sha
+  grep -qF "/$prefix" "$work/pages.txt" && return 0
+  changed="$(git log -1 --format=%H "origin/$DEFAULT_BRANCH" -- "$path")"
+  [ -n "$changed" ] || { echo "no commit touches $path" >&2; exit 1; }
+  while read -r id sha; do
+    if git merge-base --is-ancestor "$changed" "$sha" 2>/dev/null; then run="$id"; break; fi
+  done < <(gh run list -R "$REPO" --workflow "$workflow" --branch "$DEFAULT_BRANCH" --status success \
+             --limit 20 --json databaseId,headSha --jq '.[] | "\(.databaseId) \(.headSha)"')
+  if [ -n "$run" ]; then
+    echo "- \`$prefix\` — sign \`$workflow\` run \`$run\`" >> "$work/missing.md"
+  else
+    echo "- \`$prefix\` — no green \`$workflow\` run on $DEFAULT_BRANCH has built it yet" >> "$work/missing.md"
   fi
 }
 
 kver="$(awk '/^Version:/ {print $2}' kernel/kernel-lt.spec)"
 [ -n "$kver" ] || { echo "no Version: in kernel/kernel-lt.spec" >&2; exit 1; }
-need "kernel-lt-$kver-" kernel-lt.yml
+need "kernel-lt-$kver-" kernel-lt.yml kernel/
 
 rver="$(awk '/^Version:/ {print $2}' muertos-release/muertos-release.spec)"
 [ -n "$rver" ] || { echo "no Version: in muertos-release.spec" >&2; exit 1; }
-need "muertos-release-$rver-" muertos-release.yml
+need "muertos-release-$rver-" muertos-release.yml muertos-release/
 
 # survey/fixed.json is the declared list of backported packages and the release that fixes each.
-jq -r 'to_entries[] | .key as $p | .value | to_entries[] | "\($p)-\(.value)"' survey/fixed.json \
+jq -r 'to_entries[] | .key as $p | .value | to_entries[] | "\($p) \($p)-\(.value)"' survey/fixed.json \
   | sort -u > "$work/backports.txt"
 [ -s "$work/backports.txt" ] || { echo "survey/fixed.json lists no fixes" >&2; exit 1; }
-while read -r nvr; do need "$nvr." backports.yml; done < "$work/backports.txt"
+while read -r package nvr; do need "$nvr." backports.yml "packages/$package/"; done < "$work/backports.txt"
 
 if [ -s "$work/missing.md" ]; then
   {

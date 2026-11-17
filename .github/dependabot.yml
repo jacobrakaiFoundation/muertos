@@ -1,0 +1,11 @@
+# Keeps the pinned action SHAs in .github/workflows current. Its pull requests wait for a
+# person, like every pull request that is not a kernel bump.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']

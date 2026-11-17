@@ -53,7 +53,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -88,7 +88,7 @@ jobs:
 
       - name: Claude diagnoses and edits the checkout
         if: steps.gate.outputs.go == 'yes'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@cc98b3ae241b0fcfb6a42a2690751afffecb4452 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -159,7 +159,7 @@ jobs:
             printf 'NO-FIX\n\nThe repair agent finished without writing a verdict.\n' > out/verdict.md
           fi
           [ "$(stat -c %s out/fix.patch)" -le 500000 ] || { echo "the patch is over 500 kB; refusing it" >&2; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: steps.gate.outputs.go == 'yes'
         with:
           name: claude-fix
@@ -182,8 +182,8 @@ jobs:
     steps:
       # A fresh checkout of the same commit. Nothing from the diagnose job is here but the
       # artifact, and the artifact is treated as data.
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: claude-fix
           path: ${{ runner.temp }}/fix
@@ -260,7 +260,7 @@ jobs:
       actions: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Report to the watchdog
         env:
           GH_TOKEN: ${{ github.token }}
