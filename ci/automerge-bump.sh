@@ -69,8 +69,11 @@ gh api "repos/$REPO/pulls/$pr" > "$work/pr.json"
 [ "$(jq -r .head.sha "$work/pr.json")" = "$sha" ] \
   || refuse "the branch moved after the tested commit ${sha:0:7}"
 
-authors="$(gh api "repos/$REPO/pulls/$pr/commits" --paginate --jq '.[] | .author.login // "unknown"' | sort -u)"
-[ "$authors" = "$bot" ] || refuse "it carries commits from $(tr '\n' ' ' <<< "$authors")"
+# The bump job pushes exactly one commit. The author is whoever the commit's email maps to, so
+# this is a tripwire for a person adding to the branch, not proof of who pushed: only a
+# collaborator can push here, and a collaborator can already merge.
+authors="$(gh api "repos/$REPO/pulls/$pr/commits" --paginate --jq '.[] | .author.login // "unknown"')"
+[ "$authors" = "$bot" ] || refuse "it should carry one commit by $bot, and carries: $(tr '\n' ' ' <<< "$authors")"
 
 files="$(gh api "repos/$REPO/pulls/$pr/files" --paginate --jq '.[].filename' | sort)"
 [ "$files" = "$bump_files" ] \
