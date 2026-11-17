@@ -25,7 +25,8 @@ rolling() {
     return 0
   fi
   if [ -n "$dry" ]; then
-    echo "DRY RUN: would ${existing:+refresh #$existing}${existing:-open '$title'}"; cat "$body"; return 0
+    if [ -n "$existing" ]; then echo "DRY RUN: would refresh #$existing"; else echo "DRY RUN: would open '$title'"; fi
+    cat "$body"; return 0
   fi
   if [ -n "$existing" ]; then
     gh issue edit "$existing" -R "$REPO" --body-file "$body" > /dev/null
