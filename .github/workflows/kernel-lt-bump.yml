@@ -1,11 +1,17 @@
 name: kernel-lt-bump
 
-# Opens a PR moving kernel-lt to the latest 6.12.y stable release. Merging it, and signing on
-# the mini, stay human steps.
+# Opens a PR moving kernel-lt to the latest 6.12.y stable release and starts kernel-lt on it.
+# automerge-bump merges the PR once that build and boot test are green. Signing on the mini
+# stays a human step.
 on:
   schedule:
     - cron: '17 6 * * *'
   workflow_dispatch:
+    inputs:
+      selftest_fail:
+        description: Fail on purpose, to check the watchdog opens an issue
+        type: boolean
+        default: false
 
 concurrency:
   group: kernel-lt-bump
@@ -14,6 +20,8 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  # To close the watchdog's issue for a bump branch that a newer release replaced.
+  issues: write
   # Pushes made with GITHUB_TOKEN start no workflows, so the bump dispatches kernel-lt itself.
   actions: write
 
@@ -29,9 +37,15 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+      - name: Self-test failure
+        if: inputs.selftest_fail
+        run: |
+          echo "selftest_fail was set: failing on purpose so the watchdog has something to report" >&2
+          exit 1
       - name: Bump to the latest 6.12.y
         run: |
-          latest="$(curl -fsSL https://www.kernel.org/releases.json \
+          latest="$(curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
+              https://www.kernel.org/releases.json \
             | jq -r '.releases[] | select(.version | test("^6\\.12\\.[0-9]+$")) | .version')"
           if [ "$(wc -l <<< "$latest")" != 1 ] || [ -z "$latest" ]; then
             echo "expected one 6.12.y release in releases.json, got: '$latest'" >&2; exit 1
@@ -60,7 +74,22 @@ jobs:
           - sha256 from kernel.org's sha256sums.asc, verified against the checksum autosigner key
           - config-x86_64 regenerated with \`./kernel.sh config\`
 
-          Merge after kernel-lt builds and boot-tests green on this branch, then sign on the mini.
+          automerge-bump merges this once kernel-lt builds and boot-tests green on this branch.
+          Signing on the mini stays a human step.
           BODY
           )"
           gh workflow run kernel-lt.yml --ref "$branch"
+
+          # A newer release replaces any older bump still open: close it, drop its branch and
+          # the watchdog issue that named it. Only branches this workflow made qualify.
+          gh pr list --state open --author 'app/github-actions' --json number,headRefName \
+            --jq '.[] | select(.headRefName | test("^kernel-lt-6\\.12\\.[0-9]+$")) | "\(.number) \(.headRefName)"' \
+            | while read -r number old; do
+                [ "$old" = "$branch" ] && continue
+                gh pr close "$number" --delete-branch --comment "Replaced by $branch."
+                gh issue list --label ci-failure --state open --json number,title \
+                  --jq ".[] | select(.title | endswith(\"($old)\")) | .number" \
+                  | while read -r issue; do
+                      gh issue close "$issue" --comment "$old was replaced by $branch."
+                    done
+              done
