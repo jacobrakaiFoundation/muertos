@@ -130,6 +130,16 @@ jobs:
             or `NO-FIX`. Then, in plain sentences: the cause with the log line that shows it,
             what you changed and why that addresses the cause, and what remains unverified.
 
+      # The action hides Claude's output. When it fails, show only the final result's error
+      # text, which says whether the credential or the model was refused.
+      - name: Why Claude failed
+        if: failure() && steps.gate.outputs.go == 'yes'
+        run: |
+          f="$RUNNER_TEMP/claude-execution-output.json"
+          [ -s "$f" ] || { echo "no execution output was written"; exit 0; }
+          jq -r '[.[] | select(.type == "result")][-1] | "subtype=\(.subtype) is_error=\(.is_error) turns=\(.num_turns)\n\(.result // "(no result text)" | tostring | .[0:400])"' "$f" \
+            || echo "could not read the execution output"
+
       # The patch is made with diff against a fresh clone, never with git inside the checkout
       # Claude could write to: a planted .git/config would run as soon as git looked at it.
       - name: Turn the changes into a patch
