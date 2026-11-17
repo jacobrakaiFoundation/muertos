@@ -30,6 +30,13 @@ existing="$(gh issue list -R "$REPO" --label ci-failure --state open --limit 200
 case "$CONCLUSION" in
   success)
     if [ -n "$existing" ]; then
+      # Runs do not finish in the order they started. An older green run must not close an
+      # issue that a newer red run opened.
+      newest="$(gh run list -R "$REPO" --workflow "$WORKFLOW_NAME" --branch "$HEAD_BRANCH" --status completed \
+        --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+      if [ "$newest" != "$RUN_ID" ]; then
+        echo "run $RUN_ID is green but not the newest completed run ($newest); leaving #$existing open"; exit 0
+      fi
       echo "closing #$existing: $WORKFLOW_NAME is green on $HEAD_BRANCH"
       [ -n "$dry" ] || gh issue close "$existing" -R "$REPO" --comment "Green again: $RUN_URL"
     fi
@@ -49,10 +56,8 @@ jq -r '.jobs[] | select(.conclusion != "success" and .conclusion != "skipped")
 
 # The log can be missing (startup_failure has none). Say so instead of showing an empty block.
 if gh run view "$RUN_ID" -R "$REPO" --log-failed > "$work/log.raw" 2>/dev/null && [ -s "$work/log.raw" ]; then
-  # Drop the job/step/timestamp prefix and ANSI colour, keep the last 60 lines, and break any
-  # code fence in the log so it cannot close ours.
-  cut -f3- "$work/log.raw" | sed -E -e 's/^[0-9T:.\-]+Z //' -e $'s/\x1b\\[[0-9;]*m//g' -e 's/```/` ` `/g' \
-    | tail -60 > "$work/log.txt"
+  # Break any code fence in the log so it cannot close ours.
+  "$(dirname "$0")/clean-log.sh" 60 < "$work/log.raw" | sed 's/```/` ` `/g' > "$work/log.txt"
 else
   echo "(no failed-step log was available for this run)" > "$work/log.txt"
 fi
