@@ -2,6 +2,8 @@
   // muert-os.com: the muertōs landing page as Cloudflare Workers static assets.
   // Deploy from this folder: `npx wrangler@latest deploy`
   "name": "muert-os",
+  // The muert-os.com zone lives in the JBKF Cloudflare account, not the personal one.
+  "account_id": "463c113e6cbd5d85b3f4ce2b7f2b232d",
   "compatibility_date": "2026-11-16",
   "workers_dev": false,
   "preview_urls": false,
