@@ -29,14 +29,6 @@ version bumps unless no patch can be backported.
 ## Secure Boot
 
 The stock shim only trusts kernels signed by the original vendor, and any kernel we build
-loses that signature. With Secure Boot on, enroll our kernel signing certificate, then
-reboot and confirm the enrollment in the MOK manager:
-
-```bash
-mokutil --import KERNEL_CERT.der
-```
-
-`KERNEL_CERT.der` is a placeholder: `mokutil` needs an X.509 certificate in DER form, not
-the RPM GPG key, and `kernel-lt` does not ship one yet.
-
-Or turn Secure Boot off. A Microsoft-signed shim of our own is out of scope for now.
+loses that signature. `kernel-lt` does not ship a signing certificate to enroll with
+`mokutil` yet, so for now run it with Secure Boot off. A Microsoft-signed shim of our own
+is out of scope.
