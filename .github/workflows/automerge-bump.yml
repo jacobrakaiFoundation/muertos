@@ -1,0 +1,44 @@
+name: automerge-bump
+
+# Merges a kernel-lt bump pull request after kernel-lt builds and boot-tests it green.
+# Only bumps opened by kernel-lt-bump qualify; ci/automerge-bump.sh holds the conditions.
+# Signing and publishing stay human steps on the mini.
+on:
+  workflow_run:
+    workflows: [kernel-lt]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  # A merge made with GITHUB_TOKEN starts no workflow, so the script dispatches kernel-lt on main.
+  actions: write
+
+jobs:
+  merge:
+    # head_branch is data from the run; it is only compared here and passed on through env.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'workflow_dispatch' &&
+      startsWith(github.event.workflow_run.head_branch, 'kernel-lt-6.12.')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: automerge-bump
+      cancel-in-progress: false
+    steps:
+      # The default branch's copy of the script, never the bump branch's.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Merge the bump if every check holds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          rc=0
+          ./ci/automerge-bump.sh "$RUN_ID" || rc=$?
+          # 3 is a refusal: the reason is on the pull request, and that is not a broken workflow.
+          if [ "$rc" != 0 ] && [ "$rc" != 3 ]; then exit "$rc"; fi

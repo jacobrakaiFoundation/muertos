@@ -21,9 +21,9 @@ fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-curl -fsSL -o "$work/signer.asc" "https://git.kernel.org/pub/scm/docs/kernel/pgpkeys.git/plain/keys/${signer: -16}.asc"
+curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 -o "$work/signer.asc" "https://git.kernel.org/pub/scm/docs/kernel/pgpkeys.git/plain/keys/${signer: -16}.asc"
 gpg --dearmor < "$work/signer.asc" > "$work/signer.gpg"
-curl -fsSL -o "$work/sha256sums.asc" https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
+curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 -o "$work/sha256sums.asc" https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
 if ! gpgv --keyring "$work/signer.gpg" --status-fd 3 --output - "$work/sha256sums.asc" 3>"$work/status" > "$work/sha256sums"; then
   echo "sha256sums.asc failed signature verification against $signer:" >&2; cat "$work/status" >&2; exit 1
 fi
