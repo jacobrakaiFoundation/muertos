@@ -36,7 +36,7 @@ jobs:
         # Explicit, so the step runs with pipefail.
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Self-test failure
         if: inputs.selftest_fail
         run: |
