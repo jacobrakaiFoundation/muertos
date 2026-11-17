@@ -1,6 +1,9 @@
 """Render rhel7_cves.json as a ranked Markdown backlog, with muertos coverage.
 
-Usage: python3 survey/report.py <in_json> <fixed_json> <out_md>
+Usage: python3 survey/report.py <in_json> <fixed_json> <out_md> [<refreshed YYYY-MM-DD>]
+
+The output is the same for the same input: every ordering has a tie-breaker, so a refresh
+that found nothing new produces no diff.
 
 <fixed_json> maps package -> CVE -> the muertos release (Version-Release) that fixes it.
 """
@@ -32,7 +35,13 @@ def load_rows(path: Path) -> list[Row]:
     raw = json.loads(path.read_text())
     if not isinstance(raw, list):
         raise ValueError(f"{path} must hold a list, got {type(raw).__name__}")
-    rows = {(r["cve"], r["package"]): Row(**r) for r in raw}
+    # One CVE can carry several RHEL 7 entries for a package (an unfixed state and one or
+    # more ELS advisories). Keep one, chosen by rule and not by input order: an ELS fix
+    # wins, then the highest advisory.
+    ordered = sorted(raw, key=lambda r: (r["cve"], r["package"],
+                                         str(r["rhel7_state"]).startswith("Fixed in ELS"),
+                                         str(r["rhel7_state"])))
+    rows = {(r["cve"], r["package"]): Row(**r) for r in ordered}
     return [r for r in rows.values() if r.rhel7_state != NOT_AFFECTED]
 
 
@@ -50,16 +59,16 @@ def load_fixed(path: Path) -> Fixed:
     return fixed
 
 
-def severity_rank(row: Row) -> tuple[int, float]:
+def severity_rank(row: Row) -> tuple[int, float, str, str]:
     rank = SEVERITIES.index(row.severity) if row.severity in SEVERITIES else len(SEVERITIES)
-    return rank, -(row.cvss3 or 0.0)
+    return rank, -(row.cvss3 or 0.0), row.cve, row.package
 
 
 def package_table(rows: list[Row], fixed: Fixed) -> list[str]:
     counts = Counter((r.package, r.severity) for r in rows)
     covered = Counter(r.package for r in rows if (r.cve, r.package) in fixed)
     packages = sorted({r.package for r in rows},
-                      key=lambda p: tuple(-counts[(p, s)] for s in SEVERITIES))
+                      key=lambda p: (tuple(-counts[(p, s)] for s in SEVERITIES), p))
     lines = ["| Package | Crit | Imp | Mod | Low | Fixed |", "|---|---|---|---|---|---|"]
     lines += [f"| {p} | " + " | ".join(str(counts[(p, s)]) for s in SEVERITIES)
               + f" | {covered[p]} |" for p in packages]
@@ -76,7 +85,7 @@ def backlog_table(rows: list[Row], fixed: Fixed) -> list[str]:
     return lines
 
 
-def main(in_json: Path, fixed_json: Path, out_md: Path) -> None:
+def main(in_json: Path, fixed_json: Path, out_md: Path, refreshed: str = "") -> None:
     rows = load_rows(in_json)
     fixed = load_fixed(fixed_json)
     states = Counter(r.rhel7_state.split(" (")[0] for r in rows)
@@ -89,7 +98,9 @@ def main(in_json: Path, fixed_json: Path, out_md: Path) -> None:
         f"{sum((r.cve, r.package) in fixed for r in rows)} are fixed in muertos "
         f"(`survey/fixed.json`).",
         "",
-        "RHEL 7 states: " + ", ".join(f"{s} {n}" for s, n in states.most_common()) + ".",
+        *([f"Last refreshed {refreshed}.", ""] if refreshed else []),
+        "RHEL 7 states: " + ", ".join(
+            f"{s} {n}" for s, n in sorted(states.items(), key=lambda kv: (-kv[1], kv[0]))) + ".",
         "\"Fixed in ELS\" means Red Hat shipped a fix to paying RHEL 7 ELS customers, which "
         "confirms el7 is affected. The patched source is not public.",
         "",
@@ -106,4 +117,4 @@ def main(in_json: Path, fixed_json: Path, out_md: Path) -> None:
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))
+    main(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), *sys.argv[4:5])

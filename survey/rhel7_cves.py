@@ -22,7 +22,7 @@ from pathlib import Path
 API = "https://access.redhat.com/hydra/rest/securitydata"
 EOL_DATE = "2024-06-30"
 RHEL7 = "Red Hat Enterprise Linux 7"
-ATTEMPTS = 4
+ATTEMPTS = 6
 USER_AGENT = "muertos-cve-survey/1 (+https://github.com/jacobrakaiFoundation/muertos)"
 
 # Kernel CVE volume is too high to survey at every severity.
@@ -93,6 +93,10 @@ def cached_detail(cve: str, cache_dir: Path) -> dict[str, object]:
         tmp.write_text(json.dumps(fetch_json(f"{API}/cve/{cve}.json")))
         tmp.replace(path)
     detail = json.loads(path.read_text())
+    # The API sometimes returns a record as a JSON string holding the object (seen on
+    # CVE-2026-99083, 2026-11-16). One such record must not stop the whole survey.
+    if isinstance(detail, str):
+        detail = json.loads(detail)
     if not isinstance(detail, dict) or "name" not in detail:
         raise ValueError(f"{cve} detail has unexpected shape: {str(detail)[:300]}")
     return detail
