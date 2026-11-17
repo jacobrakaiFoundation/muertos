@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>muertōs — Linux for business, kept alive past end of life</title>
+<meta name="description" content="muertōs is a maintained continuation of the 7.9 enterprise Linux release: the frozen package tree plus rebuilt packages carrying security fixes. Binary compatible with CentOS 7. Pre-release.">
+<link rel="canonical" href="https://nost-os.net/">
+<meta property="og:title" content="muertōs — Linux for business, kept alive past end of life">
+<meta property="og:description" content="Security backports for servers that cannot move off enterprise Linux 7 yet. Open source. Pre-release.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nost-os.net/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23101418'/%3E%3Cpath d='M7 22V10l5 7 5-7v12' fill='none' stroke='%23e7b24a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M21 9h5' stroke='%23e7b24a' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --ink: #14181c;
+    --muted: #56606a;
+    --line: #dcd8cf;
+    --accent: #9a6a0b;
+    --accent-ink: #ffffff;
+    --band: #101418;
+    --band-ink: #eef1f3;
+    --band-muted: #a7b1ba;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0f12;
+      --surface: #141a1f;
+      --ink: #eef1f3;
+      --muted: #a1acb6;
+      --line: #25303a;
+      --accent: #e7b24a;
+      --accent-ink: #1b1303;
+      --band: #080a0c;
+      --band-ink: #eef1f3;
+      --band-muted: #93a0ab;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  a { color: inherit; }
+  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 22px 0; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { text-decoration: none; font: 650 20px/1 var(--mono); letter-spacing: -0.02em; }
+  .brand b { color: var(--accent); font-weight: 650; }
+  header nav { display: flex; gap: 22px; }
+  header nav a { text-decoration: none; color: var(--muted); font-size: 15px; }
+  header nav a:hover { color: var(--ink); }
+
+  .hero { padding: 64px 0 56px; }
+  .eyebrow { margin: 0 0 18px; color: var(--accent); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  h1 { margin: 0; max-width: 18ch; font-size: clamp(36px, 6.4vw, 68px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 700; text-wrap: balance; }
+  .lede { margin: 26px 0 0; max-width: 60ch; font-size: clamp(18px, 2.1vw, 21px); color: var(--muted); }
+  .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .btn { display: inline-block; padding: 13px 22px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; }
+  .btn:hover { filter: brightness(1.07); }
+  .status { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font: 13px/1.4 var(--mono); color: var(--muted); }
+
+  .facts { padding: 0 0 56px; }
+  .facts dl { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .facts div { border-top: 2px solid var(--ink); padding-top: 14px; }
+  .facts dt { font: 700 clamp(30px, 4.4vw, 44px)/1.05 var(--mono); letter-spacing: -0.03em; }
+  .facts dd { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+  .src { margin: 18px 0 0; color: var(--muted); font-size: 13px; }
+
+  .work { padding: 0 0 72px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 26px 24px 24px; }
+  .card .tag { margin: 0 0 10px; color: var(--accent); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .card h2 { margin: 0 0 10px; font-size: 22px; line-height: 1.2; letter-spacing: -0.015em; }
+  .card p { margin: 0 0 14px; color: var(--muted); font-size: 16px; }
+  .card ul { margin: 0; padding: 0; list-style: none; font-size: 15px; }
+  .card li { padding: 8px 0; border-top: 1px solid var(--line); }
+  code { font: 0.92em var(--mono); }
+
+  .band { background: var(--band); color: var(--band-ink); padding: 64px 0; }
+  .band h2 { margin: 0; max-width: 22ch; font-size: clamp(26px, 4vw, 40px); line-height: 1.12; letter-spacing: -0.025em; text-wrap: balance; }
+  .band p { margin: 18px 0 0; max-width: 62ch; color: var(--band-muted); font-size: 18px; }
+  .band .links { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 14px 36px; }
+  .band .links a { font-size: clamp(18px, 2.6vw, 24px); font-weight: 600; text-decoration-color: var(--accent); text-decoration-thickness: 3px; text-underline-offset: 6px; }
+  .band a:focus-visible { outline-color: var(--band-ink); }
+
+  footer { padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+  footer p { margin: 0; }
+  footer .legal { flex-basis: 100%; }
+
+  @media (max-width: 820px) {
+    .grid, .facts dl { grid-template-columns: 1fr; }
+    .hero { padding: 40px 0 44px; }
+    .band { padding: 52px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="muertōs home">muert<b>ō</b>s</a>
+    <nav><a href="https://github.com/jacobrakaiFoundation/muertos">Source</a></nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Linux for business</p>
+      <h1>Enterprise Linux 7 reached end of life. Your servers did not.</h1>
+      <p class="lede">muertōs is a maintained continuation of the 7.9 release: the frozen package tree, plus rebuilt packages carrying security fixes. It is binary compatible with CentOS 7, for the systems that cannot move yet.</p>
+      <div class="actions">
+        <a class="btn" href="https://github.com/jacobrakaiFoundation/muertos">Read the source</a>
+        <span class="status">Status: pre-release. No package repository is published yet.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="facts" aria-label="Why this exists">
+    <div class="wrap">
+      <dl>
+        <div><dt>2024-06-30</dt><dd>The day upstream support for the 7 series ended.</dd></div>
+        <div><dt>1,129</dt><dd>Package and CVE pairs published since then that Red Hat marks as affecting RHEL 7.</dd></div>
+        <div><dt>122</dt><dd>Of those, Important or Critical kernel CVEs. Fixes went only to paying extended-support customers, or nowhere.</dd></div>
+      </dl>
+      <p class="src">Counts come from the Red Hat Security Data API, as surveyed in the project's <a href="https://github.com/jacobrakaiFoundation/muertos/blob/main/survey/CVES.md">CVE report</a>.</p>
+    </div>
+  </section>
+
+  <section class="work" aria-label="What muertōs is">
+    <div class="wrap grid">
+      <article class="card">
+        <p class="tag">Scope</p>
+        <h2>Security fixes, nothing else</h2>
+        <p>The base stays where your applications expect it. Changes are backported security patches, not new versions.</p>
+        <ul>
+          <li>Base: 7.9.2009 <code>os</code>, <code>updates</code> and <code>extras</code></li>
+          <li>x86_64 only</li>
+          <li>No version bumps unless no patch can be backported</li>
+        </ul>
+      </article>
+      <article class="card">
+        <p class="tag">Kernel</p>
+        <h2>A kernel that still gets fixes</h2>
+        <p>The plan is a 6.12 long-term kernel, packaged as <code>kernel-lt</code>, with the stock 3.10 kernel frozen beside it.</p>
+        <ul>
+          <li>Rebuilt from kernel.org stable releases</li>
+          <li>Installed and boot-tested on a stock 7.9 virtual machine in CI</li>
+          <li>Out-of-tree kernel modules need a rebuild</li>
+        </ul>
+      </article>
+      <article class="card">
+        <p class="tag">Provenance</p>
+        <h2>You can see what changed</h2>
+        <p>Every package starts from a signature-checked source package from the public vault, and every patch is in the repository.</p>
+        <ul>
+          <li>Rebuilt packages carry <code>.muertos</code> in their release tag</li>
+          <li>Releases will be signed with a hardware-held OpenPGP key</li>
+          <li>Build scripts and patches are public</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>Running 7 in production and want to follow along?</h2>
+      <p>The work happens in the open. Watch the repository for the first published packages, or open an issue to say which packages your systems depend on. That helps decide what gets fixed first.</p>
+      <div class="links">
+        <a href="https://github.com/jacobrakaiFoundation/muertos">github.com/jacobrakaiFoundation/muertos</a>
+        <a href="https://github.com/jacobrakaiFoundation/muertos/issues">Open an issue</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>A project of the <a href="https://jacobrakai.org/">Jacobrakai Foundation</a>. Founded by Jacob Durham.</p>
+    <p>Pre-release software. No warranty.</p>
+    <p class="legal">muertōs is built from CentOS 7 sources and is not affiliated with, endorsed by or supported by the CentOS Project or Red Hat. CentOS and Red Hat Enterprise Linux are trademarks of Red Hat, Inc. Linux is a trademark of Linus Torvalds.</p>
+  </div>
+</footer>
+
+</body>
+</html>

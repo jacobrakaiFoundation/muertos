@@ -1,0 +1,14 @@
+{
+  // nost-os.net: the muertōs landing page as Cloudflare Workers static assets.
+  // Deploy from this folder: `npx wrangler@latest deploy`
+  // The worker name matches the one already bound to nost-os.net, so a deploy replaces what is there.
+  "name": "nost-os-net",
+  "compatibility_date": "2026-11-16",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "public" },
+  "routes": [
+    { "pattern": "nost-os.net", "custom_domain": true },
+    { "pattern": "www.nost-os.net", "custom_domain": true }
+  ]
+}
