@@ -119,9 +119,11 @@ workflow: `./release/publish-on-mini.sh <kernel-lt run> <muertos-release run>`.
 - **Patch sources.** Candidates are upstream project commits and Debian/Ubuntu LTS
   backports for the same versions. Whether any commercial el7 extended-support
   vendor publishes its patched sources is still unchecked.
-- **Priority list.** `survey/CVES.md` ranks the 1,129 post-EOL package/CVE pairs. Run
+- **Priority list.** `survey/CVES.md` ranks the post-EOL package/CVE pairs and shows which
+  ones muertos has fixed (`survey/fixed.json`). The `cve-survey` workflow refreshes it every
+  Monday and opens a PR when it changes. By hand:
   `python3 survey/rhel7_cves.py survey/cache survey/rhel7_cves.json` then
-  `python3 survey/report.py survey/rhel7_cves.json survey/CVES.md` to refresh it.
+  `python3 survey/report.py survey/rhel7_cves.json survey/fixed.json survey/CVES.md`.
 - **Kernel.** See `docs/kernel.md`. Recommended: `kernel-lt` on 6.12 LTS by default,
   with stock 3.10 frozen and Critical/remote fixes only.
 - **Capyloon shell.** `docs/capyloon-el7.md` maps the x86_64 reference port onto 7.9:

@@ -41,6 +41,13 @@ The repository keeps itself current and says so when it cannot. The scripts are 
 - `claude-fix` gets one attempt at each new `ci-failure` issue. It opens a PR or explains
   on the issue. Its PRs are never merged automatically, and `ci/claude-fix-gate.sh` lists
   the paths it may change.
+- `cve-survey` refreshes `survey/CVES.md` every Monday into one rolling PR
+  (`survey-refresh`) and keeps one `cve` issue listing every Critical CVE with no muertos
+  fix. `ci/check-fixed.sh` fails it if `survey/fixed.json` and the patches
+  under `packages/` disagree.
+- A run that `GITHUB_TOKEN` started raises no `workflow_run`, so `kernel-lt` and
+  `claude-fix` report to the watchdog from their own last job. Keep that when adding a
+  workflow that another workflow dispatches.
 - Everything else waits for Jacob: backports, docs, anything under `release/`, and every
   merge that is not a kernel bump.
 
