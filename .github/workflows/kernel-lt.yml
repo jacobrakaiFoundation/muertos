@@ -48,3 +48,44 @@ jobs:
       - name: Console log
         if: always()
         run: tail -200 "$RUNNER_TEMP/vm/console.log" || true
+
+  # GitHub raises no workflow_run for a run that GITHUB_TOKEN started, so a run the bump job
+  # (or automerge-bump) dispatched would finish unseen by the watchdog and by automerge-bump.
+  # Such a run does both jobs itself, from main's copy of the scripts.
+  after:
+    needs: [build, boot-test]
+    if: always() && github.event_name == 'workflow_dispatch' && github.triggering_actor == 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Report to the watchdog
+        env:
+          NTFY_URL: ${{ secrets.NTFY_URL }}
+          SELF_REPORT: 1
+          WORKFLOW_NAME: kernel-lt
+          WORKFLOW_PATH: .github/workflows/kernel-lt.yml
+          CONCLUSION: ${{ (needs.build.result == 'success' && needs.boot-test.result == 'success') && 'success' || ((needs.build.result == 'cancelled' || needs.boot-test.result == 'cancelled') && 'cancelled' || 'failure') }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+          EVENT: workflow_dispatch
+        run: ./ci/watchdog-run.sh
+      - name: Merge the bump if every check holds
+        if: needs.build.result == 'success' && needs.boot-test.result == 'success' && startsWith(github.ref_name, 'kernel-lt-6.12.')
+        run: |
+          rc=0
+          ./ci/automerge-bump.sh "$RUN_ID" || rc=$?
+          # 3 is a refusal: the reason is on the pull request, and that is not a broken run.
+          if [ "$rc" != 0 ] && [ "$rc" != 3 ]; then exit "$rc"; fi

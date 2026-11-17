@@ -247,3 +247,28 @@ jobs:
               fi ;;
             *) echo "unexpected gate verdict '$action'" >&2; exit 1 ;;
           esac
+
+  # The watchdog starts this workflow with GITHUB_TOKEN, and GitHub raises no workflow_run
+  # for such a run, so a failure here reports itself.
+  report:
+    needs: [diagnose, apply]
+    if: failure() && github.triggering_actor == 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report to the watchdog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELF_REPORT: 1
+          WORKFLOW_NAME: claude-fix
+          CONCLUSION: failure
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+          EVENT: workflow_dispatch
+        run: ./ci/watchdog-run.sh

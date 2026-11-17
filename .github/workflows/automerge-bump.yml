@@ -3,6 +3,10 @@ name: automerge-bump
 # Merges a kernel-lt bump pull request after kernel-lt builds and boot-tests it green.
 # Only bumps opened by kernel-lt-bump qualify; ci/automerge-bump.sh holds the conditions.
 # Signing and publishing stay human steps on the mini.
+#
+# This covers a kernel-lt run a person dispatched on a bump branch. A run the bump job itself
+# dispatched raises no workflow_run (GITHUB_TOKEN started it), so kernel-lt's own last job
+# calls the same script for that case.
 on:
   workflow_run:
     workflows: [kernel-lt]

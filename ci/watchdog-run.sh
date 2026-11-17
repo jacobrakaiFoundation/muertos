@@ -3,7 +3,12 @@
 # the issue when the same workflow goes green on the same branch.
 #
 # Env: REPO, WORKFLOW_NAME, WORKFLOW_PATH, CONCLUSION, RUN_ID, RUN_URL, HEAD_BRANCH, EVENT,
-#      DEFAULT_BRANCH, GH_TOKEN. Optional: NTFY_URL, DRY_RUN=1 (print, change nothing).
+#      DEFAULT_BRANCH, GH_TOKEN. Optional: NTFY_URL, DRY_RUN=1 (print, change nothing),
+#      SELF_REPORT=1 (called from inside the run it reports on, which is still in progress).
+#
+# Two callers. The watchdog workflow calls this on workflow_run. But GitHub raises no
+# workflow_run for a run that GITHUB_TOKEN started, and the bump job starts kernel-lt that
+# way, so such a run reports on itself from its last job with SELF_REPORT=1.
 #
 # Every value above comes from the run's metadata or its logs. All of it is data: nothing here
 # is ever evaluated, and it reaches gh only as an argument or a file.
@@ -34,7 +39,7 @@ case "$CONCLUSION" in
       # issue that a newer red run opened.
       newest="$(gh run list -R "$REPO" --workflow "$WORKFLOW_NAME" --branch "$HEAD_BRANCH" --status completed \
         --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
-      if [ "$newest" != "$RUN_ID" ]; then
+      if [ -z "${SELF_REPORT:-}" ] && [ "$newest" != "$RUN_ID" ]; then
         echo "run $RUN_ID is green but not the newest completed run ($newest); leaving #$existing open"; exit 0
       fi
       echo "closing #$existing: $WORKFLOW_NAME is green on $HEAD_BRANCH"
@@ -55,7 +60,15 @@ jq -r '.jobs[] | select(.conclusion != "success" and .conclusion != "skipped")
   "$work/jobs.json" > "$work/failed.md"
 
 # The log can be missing (startup_failure has none). Say so instead of showing an empty block.
-if gh run view "$RUN_ID" -R "$REPO" --log-failed > "$work/log.raw" 2>/dev/null && [ -s "$work/log.raw" ]; then
+if ! gh run view "$RUN_ID" -R "$REPO" --log-failed > "$work/log.raw" 2>/dev/null || [ ! -s "$work/log.raw" ]; then
+  # A run still in progress has no run log yet, but its finished jobs do.
+  : > "$work/log.raw"
+  for job in $(jq -r '.jobs[] | select(.conclusion == "failure") | .databaseId' "$work/jobs.json"); do
+    curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" \
+      "https://api.github.com/repos/$REPO/actions/jobs/$job/logs" >> "$work/log.raw" 2>/dev/null || true
+  done
+fi
+if [ -s "$work/log.raw" ]; then
   # Break any code fence in the log so it cannot close ours.
   "$(dirname "$0")/clean-log.sh" 60 < "$work/log.raw" | sed 's/```/` ` `/g' > "$work/log.txt"
 else
@@ -79,7 +92,8 @@ fi
 } > "$work/body.md"
 
 if [ -n "$dry" ]; then
-  echo "DRY RUN: would ${existing:+comment on #$existing}${existing:-open '$title'}"; cat "$work/body.md"; exit 0
+  if [ -n "$existing" ]; then echo "DRY RUN: would comment on #$existing"; else echo "DRY RUN: would open '$title'"; fi
+  cat "$work/body.md"; exit 0
 fi
 
 if [ -n "$existing" ]; then
